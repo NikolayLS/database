@@ -186,3 +186,177 @@ select distinct p1.maker, p1.model
 from product p1, product p2, pc as pc1, pc as pc2
 where p1.maker=p2.maker and p1.model<>p2.model and pc1.speed>400 and pc1.model=p1.model and
 pc2.speed>400 and pc2.model=p2.model;
+
+--Subqueries-----------------------------------------------------
+--Напишете заявка, която извежда имената на актрисите, които са също и
+--продуценти с нетна стойност по-голяма от 10 милиона.
+SELECT NAME
+FROM MOVIESTAR
+WHERE NAME IN(SELECT NAME FROM MOVIEEXEC WHERE NETWORTH >10000000);
+
+--Напишете заявка, която извежда имената на тези актьори (мъже и жени), които
+--не са продуценти.
+SELECT NAME
+FROM MOVIESTAR
+WHERE NAME NOT IN (SELECT NAME FROM MOVIEEXEC);
+
+--Напишете заявка, която извежда имената на всички филми с дължина по-голяма
+--от дължината на филма ‘Gone With the Wind’
+SELECT TITLE
+FROM MOVIE
+WHERE LENGTH > (SELECT LENGTH FROM MOVIE WHERE TITLE = 'Gone With the Wind');
+
+--Напишете заявка, която извежда имената на продуцентите и имената на
+--продукциите за които стойността им е по-голяма от продукциите на продуценти ‘Merv Griffin’
+SELECT NAME, TITLE
+FROM MOVIEEXEC, MOVIE
+WHERE NETWORTH > (SELECT NETWORTH FROM MOVIEEXEC WHERE NAME = 'Merv Griffin')
+AND PRODUCERC# = MOVIEEXEC.CERT#;
+
+--Напишете заявка, която извежда името на филмите с най-голяма дължина по
+--студио.
+SELECT *
+FROM MOVIE M1
+WHERE LENGTH >= ALL(SELECT LENGTH FROM MOVIE WHERE M1.STUDIONAME = STUDIONAME
+                                               AND LENGTH NOT LIKE 'null');
+
+--Напишете заявка, която извежда производителите на персонални компютри с
+--честота поне 500
+SELECT MAKER
+FROM PRODUCT
+WHERE MODEL IN (SELECT MODEL FROM PC WHERE SPEED > 500);
+
+--Напишете заявка, която извежда принтерите с най-висока цена.
+SELECT *
+FROM PRINTER
+WHERE PRICE >= ALL(SELECT PRICE FROM PRINTER);
+
+--Напишете заявка, която извежда лаптопите, чиято честота е по-ниска от
+--честотата на който и да е персонален компютър.
+SELECT *
+FROM LAPTOP
+WHERE SPEED < ALL(SELECT SPEED FROM PC );
+
+--Напишете заявка, която извежда производителя на цветния принтер с най-ниска
+--цена.
+SELECT MAKER
+FROM PRODUCT
+WHERE MODEL IN (SELECT MODEL FROM PRINTER WHERE COLOR = 'y'
+                                            AND PRICE <= ALL(SELECT PRICE FROM PRINTER
+                                            WHERE COLOR ='y'));
+
+
+--Напишете заявка, която извежда производителите на тези персонални компютри
+--с най-малко RAM памет, които имат най-бързи процесори.
+SELECT MAKER
+FROM PRODUCT
+WHERE MODEL IN(SELECT MODEL
+                FROM PC
+                WHERE RAM <= ALL(SELECT RAM
+                                    FROM PC
+                                    WHERE  SPEED <= ALL(SELECT  SPEED FROM PC)));
+
+
+--• Напишете заявка, която извежда страните, чиито кораби са с най-голям брой
+--оръжия.
+SELECT DISTINCT COUNTRY
+FROM CLASSES
+WHERE NUMGUNS >= ALL(SELECT NUMGUNS FROM CLASSES);
+
+--Напишете заявка, която извежда класовете, за които поне един от корабите им е
+--потънал в битка.
+SELECT DISTINCT CLASS
+FROM SHIPS
+WHERE NAME IN (SELECT SHIP FROM OUTCOMES WHERE RESULT = 'sunk');
+
+--Напишете заявка, която извежда имената на корабите с 16 инчови оръдия (bore).
+SELECT DISTINCT NAME
+FROM SHIPS
+WHERE CLASS IN( SELECT CLASS FROM CLASSES WHERE BORE = 16);
+
+--Напишете заявка, която извежда имената на битките, в които са участвали
+--кораби от клас ‘Kongo’.
+SELECT BATTLE
+FROM OUTCOMES
+WHERE SHIP IN (SELECT NAME FROM SHIPS WHERE CLASS = 'Kongo');
+
+--Напишете заявка, която извежда иманата на корабите, чиито брой оръдия е
+--най-голям в сравнение с корабите със същия калибър оръдия (bore).
+SELECT UPPER(NAME)
+FROM SHIPS
+WHERE CLASS IN (SELECT CLASS
+                FROM CLASSES T1
+                WHERE NUMGUNS >= ALL(SELECT NUMGUNS
+                                    FROM CLASSES
+                                    WHERE BORE = T1.BORE));
+
+
+--GROUP BY TASKS----------------------------------------------------------------
+--Напишете заявка, която извежда средната честота на компютрите
+SELECT DECIMAL(AVG(SPEED),9,2)
+FROM PC;
+
+--Напишете заявка, която извежда средния размер на екраните на лаптопите за
+--всеки производител
+SELECT MAKER, AVG(SCREEN)
+FROM LAPTOP , PRODUCT
+WHERE PRODUCT.MODEL = LAPTOP.MODEL
+GROUP BY MAKER;
+
+--Напишете заявка, която извежда средната честота на лаптопите с цена над 1000
+SELECT AVG(SPEED)
+FROM LAPTOP
+WHERE PRICE > 1000;
+
+--Напишете заявка, която извежда средната цена на компютрите произведени от
+--производител ‘A’
+SELECT AVG(PRICE)
+FROM PC
+WHERE MODEL IN(SELECT MODEL FROM PRODUCT WHERE MAKER = 'A');
+
+--Напишете заявка, която извежда средната цена на компютрите и лаптопите за
+--производител ‘B’
+SELECT AVG(PRICE)
+FROM
+(SELECT PRICE AS PRICE
+FROM LAPTOP
+WHERE MODEL IN (SELECT MODEL FROM PRODUCT WHERE MAKER = 'B')
+UNION ALL
+SELECT PRICE AS PRICE
+FROM PC
+WHERE MODEL IN (SELECT MODEL FROM PRODUCT WHERE MAKER = 'B'));
+
+--Напишете заявка, която извежда средната цена на компютрите според
+--различните им честоти
+SELECT AVG(PRICE)
+FROM PC
+GROUP BY SPEED;
+
+--Напишете заявка, която извежда производителя, които е произвел поне 3
+--различни модела компютъра
+SELECT DISTINCT MAKER
+FROM PRODUCT
+WHERE MODEL IN (SELECT MODEL FROM PC GROUP BY MODEL HAVING COUNT(MODEL)>2);
+
+--Напишете заявка, която извежда производителя с най-висока цена на компютър
+SELECT MAKER
+FROM PRODUCT
+WHERE MODEL IN (SELECT MODEL FROM PC WHERE PRICE >= ALL(SELECT PRICE FROM PC));
+
+--Напишете заявка, която извежда средната цена на компютрите за всяка честота
+--по-голяма от 800
+SELECT AVG(PRICE)
+FROM PC
+WHERE SPEED > 800
+GROUP BY SPEED;
+
+--Напишете заявка, която извежда средния размер на диска на тези компютри
+--произведени от производители, които произвеждат и принтери
+SELECT AVG(HD)
+FROM PC pc
+WHERE MODEL IN (SELECT MODEL
+                FROM PRODUCT
+                WHERE MAKER IN (
+                                SELECT MAKER
+                                FROM PRODUCT
+                                WHERE TYPE = 'Printer'));
